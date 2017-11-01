@@ -6,8 +6,8 @@ from .models import Project, Segment
 
 class SegmentInline(admin.TabularInline):
     model = Segment
-    fields = ('status', 'machine', 'video_file')
-    readonly_fields = ('video_file', 'machine')
+    fields = ('serial', 'status', 'booked_by', 'video_file', 'booked_at', 'uploaded_at')
+    readonly_fields = ('video_file', 'booked_by', 'serial', 'booked_at', 'uploaded_at')
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -19,8 +19,10 @@ class ProjectAdmin(admin.ModelAdmin):
     inlines = [SegmentInline]
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.segment_set.count():
-            return [u'section_count', u'section_unit']
+            fields= [u'section_count', u'section_unit']
         else:
-            return []
+            fields = []
+        fields.append(u"video_file")
+        return fields
 
 admin.site.register(Project, ProjectAdmin)

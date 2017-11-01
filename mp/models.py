@@ -8,6 +8,8 @@ import os
 import tarfile
 from django.conf import settings
 import shutil
+from django.contrib.auth.models import User
+import json
 
 def project_data_file_path(instance, filename):
     root, ext = os.path.os.path.splitext(filename)
@@ -15,8 +17,9 @@ def project_data_file_path(instance, filename):
 
 class Project(models.Model):
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100, unique=True)
     data_file = models.FileField(upload_to=project_data_file_path)
+    video_file = models.FileField(upload_to="video_file/", null=True, default=None)
     main_filename = models.CharField(max_length=255)
     time_line_name = models.CharField(max_length=255, default='')
     status = models.CharField(max_length=20, default=u"Open")
@@ -24,10 +27,19 @@ class Project(models.Model):
     section_unit = models.CharField(
                     max_length=10, default="seg",
                     choices=[["sec", "Seconds"], ["seg", "Segments"]])
-
+    extras = models.TextField(default='{"file_ext": ".webm"}')
 
     def get_data_file_path(self):
         return  os.path.join(settings.MEDIA_ROOT, self.data_file.name)
+
+    def get_final_video_name(self):
+        extras = json.loads(self.extras)
+        return "{0}_final{1}".format(self.name, extras.get("file_ext", ".webm"))
+
+    def get_temp_final_video_path(self):
+        extras = json.loads(self.extras)
+        filename = "{0}_{1}_temp_final{2}".format(self.id, self.name, extras.get("file_ext", ".webm"))
+        return os.path.join(settings.MEDIA_ROOT, filename)
 
     def save(self, *args, **kwargs):
         super(Project, self).save(*args, **kwargs)
@@ -59,11 +71,14 @@ class Project(models.Model):
                 segment_duration = self.section_count
 
             start_time = 0
+            i=0
             while start_time<duration:
                 end_time = min(duration, start_time+segment_duration)
-                segment=Segment(project=self, start_time=start_time, end_time=end_time)
+                segment=Segment(project=self, serial=i,
+                    start_time=start_time, end_time=end_time)
                 segment.save()
                 start_time = end_time
+                i += 1
 
         Document.unload_file(doc_filename)
         shutil.rmtree(extract_folder)
@@ -72,15 +87,21 @@ class Project(models.Model):
         return u"{0}-{1}".format(self.name, self.main_filename)
 
 def project_segment_path(instance, filename):
-    return u"{0}/{1}".format(instance.project.id)
+    return u"project_videos_{0}/{1}_{2}".format(instance.project.id, instance.id, filename)
 
 class Segment(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    serial = models.IntegerField(default=0)
     start_time = models.FloatField()
     end_time = models.FloatField()
     status = models.CharField(max_length=20, default=u"Open")
     video_file = models.FileField(upload_to=project_segment_path)
-    machine = models.CharField(max_length=100, default='')
+    booked_at = models.DateTimeField(null=True, blank=True)
+    uploaded_at = models.DateTimeField(null=True, blank=True)
+    booked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def get_full_video_file_path(self):
+        return os.path.join(settings.MEDIA_ROOT, self.video_file.name)
 
     def __str__(self):
         return u"{0}-{1}".format(self.start_time, self.end_time)
