@@ -27,8 +27,10 @@ SECRET_KEY = '*5p1(uh7$^dz3lkqegp1(lrvy%@nxlr0z=7n!4kp0a50$^kx=@'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = [
+    "127.0.0.1"
+]
+ALLOWED_HOSTS += ["192.168.1.{0}".format(i) for i in xrange(255)]
 
 # Application definition
 
