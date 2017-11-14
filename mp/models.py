@@ -104,4 +104,4 @@ class Segment(models.Model):
         return os.path.join(settings.MEDIA_ROOT, self.video_file.name)
 
     def __str__(self):
-        return u"{0}-{1}".format(self.start_time, self.end_time)
+        return u"id:{2}::{0}-{1}".format(self.start_time, self.end_time, self.id)

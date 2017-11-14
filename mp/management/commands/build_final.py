@@ -35,9 +35,9 @@ class Command(BaseCommand):
                         temp_path = project.get_temp_final_video_path()
                         main_clip.write_videofile(
                             temp_path,
-                            ffmpeg_params=Document.FFMPEG_PARAMS.split(" "),
-                            codec = Document.CODEC, preset="superslow",
-                            bitrate = Document.BIT_RATE)
+                            ffmpeg_params=DocMovie.FFMPEG_PARAMS.split(" "),
+                            codec = DocMovie.CODEC, preset="superslow",
+                            bitrate = DocMovie.BIT_RATE)
 
                         project.status = u"Made"
                         f = open(temp_path, "r")
