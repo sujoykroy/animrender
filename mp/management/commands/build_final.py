@@ -22,6 +22,8 @@ class Command(BaseCommand):
                 for project in projects:
                     if project.status == "Made":
                         continue
+                    extras = project.get_extras_json()
+                    fps = extras.get("fps", 24)
                     segments = project.segment_set.filter(Q(status=u"Booked")|Q(status=u"Open"))
                     if segments.count() == 0:
                         print("Building final video of {0}".format(project.name))
@@ -29,15 +31,25 @@ class Command(BaseCommand):
                         clips = []
                         for segment in segments:
                             clip = VideoFileClip(segment.get_full_video_file_path())
-                            clip = clip.subclip(0, clip.duration)
+                            clip = clip.subclip(0, t_end=segment.end_time-segment.start_time)
                             clips.append(clip)
                         main_clip = concatenate_videoclips(clips)
                         temp_path = project.get_temp_final_video_path()
-                        main_clip.write_videofile(
-                            temp_path,
+
+                        args = dict(
                             ffmpeg_params=DocMovie.FFMPEG_PARAMS.split(" "),
                             codec = DocMovie.CODEC, preset="superslow",
-                            bitrate = DocMovie.BIT_RATE)
+                            bitrate = DocMovie.BIT_RATE
+                        )
+                        for key in args.keys():
+                            if key in extras:
+                                args[key] = extras[key]
+
+                        main_clip.write_videofile(
+                            temp_path,
+                            ffmpeg_params=args["ffmpeg_params"].split(" "),
+                            codec = args["codec"], preset=args["preset"],
+                            bitrate = args["bitrate"], fps=24)
 
                         project.status = u"Made"
                         f = open(temp_path, "r")

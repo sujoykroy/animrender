@@ -29,6 +29,9 @@ class Project(models.Model):
                     choices=[["sec", "Seconds"], ["seg", "Segments"]])
     extras = models.TextField(default='{"file_ext": ".webm"}')
 
+    def get_extras_json(self):
+        return json.loads(self.extras)
+
     def get_data_file_path(self):
         return  os.path.join(settings.MEDIA_ROOT, self.data_file.name)
 
